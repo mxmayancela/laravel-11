@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AsContractWizardprocess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AsContractWizardprocessController extends Controller
 {
@@ -12,7 +13,21 @@ class AsContractWizardprocessController extends Controller
      */
     public function index()
     {
-        //
+        $listSchemas = DB::select("SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'schema_%'");
+        $as = collect();
+
+        foreach ($listSchemas as $schema) {
+            $results = DB::table("{$schema->schema_name}.as_contract_wizardprocess")
+                ->join(
+                    "{$schema->schema_name}.wizardprocess",
+                    "{$schema->schema_name}.as_contract_wizardprocess.id_wizardprocess",
+                    "=",
+                    "{$schema->schema_name}.wizardprocess.id_wizardprocess")
+                ->get();
+            $as = $as->concat($results);
+        }
+
+        return $as;
     }
 
     /**

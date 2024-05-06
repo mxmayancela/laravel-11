@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Wizardprocess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class WizardprocessController extends Controller
 {
@@ -12,7 +13,19 @@ class WizardprocessController extends Controller
      */
     public function index()
     {
-        //
+        $listSchemas = DB::select("SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'schema_%'");
+        $wizardprocesses = collect();
+
+        foreach ($listSchemas as $schema) {
+            //$results = DB::select("SELECT * FROM {$schema}.wizardprocess JOIN {$schema}.credit ON {$schema}.wizardprocess.id_credit = {$schema}.credit.id");
+            $results = DB::table("{$schema->schema_name}.wizardprocess")
+                ->join("{$schema->schema_name}.credit", "{$schema->schema_name}.wizardprocess.id_credit", "=", "{$schema->schema_name}.credit.id")
+                ->leftJoin('institution', 'institution.id_institution', '=', "{$schema->schema_name}.wizardprocess.id_institution")
+                ->get();
+            $wizardprocesses = $wizardprocesses->concat($results);
+        }
+
+        return $wizardprocesses;
     }
 
     /**
@@ -32,6 +45,7 @@ class WizardprocessController extends Controller
             $wizardprocess = new Wizardprocess();
             $wizardprocess->setSchema($request->schema);
             $wizardprocess->id_credit = $request->id_credit;
+            $wizardprocess->id_institution = $request->id_institution;
             $wizardprocess->save();
 
             return response()->json([
